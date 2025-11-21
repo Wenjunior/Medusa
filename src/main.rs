@@ -1,5 +1,7 @@
 use clap::Parser;
 use regex::Regex;
+use std::fs::File;
+use std::io::Write;
 use serde_json::Value;
 
 #[derive(Parser)]
@@ -7,7 +9,11 @@ use serde_json::Value;
 struct Args {
 	/// Target domain
 	#[arg(short, long)]
-	domain: String
+	domain: String,
+
+	/// Save results in a file
+	#[arg(short, long)]
+	output: Option<String>
 }
 
 trait Source {
@@ -122,6 +128,16 @@ impl Source for HackerTarget {
 	}
 }
 
+fn save_results(found_subdomains: &mut Vec<String>, filename: String) {
+	let mut file = File::create(filename)
+		.unwrap();
+
+	for found_subdomain in found_subdomains {
+		writeln!(file, "{}", found_subdomain)
+			.unwrap();
+	}
+}
+
 fn main() {
 	let args = Args::parse();
 
@@ -141,7 +157,11 @@ fn main() {
 
 	found_subdomains.sort();
 
-	for found_subdomain in found_subdomains {
+	for found_subdomain in &found_subdomains {
 		println!("{found_subdomain}");
+	}
+
+	if let Some(filename) = args.output {
+		save_results(&mut found_subdomains, filename);
 	}
 }
