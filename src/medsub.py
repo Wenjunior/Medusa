@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 from argparse import HelpFormatter, ArgumentParser
 
-VERSION = '0.0.1'
+VERSION = '0.0.2'
 
 WARNING = '\033[93m'
 RESET_ALL = '\033[0m'
@@ -145,6 +145,38 @@ class HudsonRock:
 			if '•' not in found_subdomain and found_subdomain not in found_subdomains:
 				found_subdomains.append(found_subdomain)
 
+class RapidDNS:
+	name = 'RapidDNS'
+
+	def search(self, domain):
+		page_number = 1
+
+		max_page = 1
+
+		while page_number < max_page + 1:
+			url = f'https://rapiddns.io/s/{domain}?page={page_number}'
+
+			response = requests.get(url)
+
+			body = response.text
+
+			if page_number == 1:
+				matches = re.findall('\\/s\\/google\\.com\\?page=[0-9]+', body)
+
+				max_page = int(matches[-2].split('=')[1])
+
+			soup = BeautifulSoup(body, 'html.parser')
+
+			tags = soup.find_all('td')
+
+			for tag in tags:
+				found_subdomain = tag.text
+
+				if found_subdomain.endswith(domain) and found_subdomain not in found_subdomains:
+					found_subdomains.append(found_subdomain)
+
+			page_number += 1
+
 def save_results(filename):
 	file = open(filename, 'w')
 
@@ -160,7 +192,8 @@ def main():
 		CertificateDetails(),
 		CertificateSearch(),
 		HackerTarget(),
-		HudsonRock()
+		HudsonRock(),
+		RapidDNS()
 	]
 
 	for source in sources:
